@@ -17,6 +17,7 @@ fun main(args: Array<String>) {
         val myDrones = mutableListOf<Drone>()
         val creatures = mutableListOf<Creature>()
         val creaturesSaved = mutableSetOf<Int>()
+        val blips = mutableListOf<Blip>()
 
         val myScore = input.nextInt()
         val foeScore = input.nextInt()
@@ -66,30 +67,49 @@ fun main(args: Array<String>) {
             val droneId = input.nextInt()
             val creatureId = input.nextInt()
             val radar = input.next()
+            blips.add(Blip(droneId, creatureId, RadarDir.valueOf(radar)))
         }
-        for (i in 0 until myDroneCount) {
-            val drone = myDrones[i]!!
-            val output: String
-            val creatureToScan = closest(
-                drone,
-                creatures.filterNot { scannedCreatures.contains(it.id) })
-            if (drone.battery >= 15) {
-                lightCountByDrone[i] = 3
+        val state = State(myDrones, creatures, scannedCreatures, lightCountByDrone)
+        val output = calculate(state)
+        println(output.joinToString("\n"))
+    }
+}
+
+data class State(
+    val myDrones: List<Drone>,
+    val creatures: List<Creature>,
+    val scannedCreatures: Set<Int>,
+    val lightCountByDrone: Map<Int, Int>
+)
+
+/**
+ *  MOVE <x> <y> <light (1|0)> | WAIT <light (1|0)>
+ */
+private fun calculate(state: State): List<String> {
+    val myLightCountByDrone = state.lightCountByDrone.toMutableMap()
+    val myScannedCreates = state.scannedCreatures.toMutableSet()
+    val output = mutableListOf<String>()
+    for (i in state.myDrones.indices) {
+        val drone = state.myDrones[i]
+        val creatureToScan = closest(
+            drone,
+            state.creatures.filterNot { myScannedCreates.contains(it.id) })
+        if (drone.battery >= 15) {
+            myLightCountByDrone[i] = 3
+        }
+        if (creatureToScan != null) {
+            myScannedCreates.add(creatureToScan.id)
+            output.add("MOVE ${creatureToScan.c.x} ${creatureToScan.c.y} 0")
+        } else {
+            val light = myLightCountByDrone[i]!! > 0
+            if (light) {
+                myLightCountByDrone[i] = myLightCountByDrone[i]!! - 1
             }
-            if (creatureToScan != null) {
-                scannedCreatures.add(creatureToScan.id)
-                output = "MOVE ${creatureToScan.c.x} ${creatureToScan.c.y} 0"
-            } else {
-                val light = lightCountByDrone[i]!! > 0
-                if (light) {
-                    lightCountByDrone[i] = lightCountByDrone[i]!! - 1
-                }
-                val lightNum = if (light) "1" else "0"
-                output = "WAIT $lightNum"
-            }
-            println(output) // MOVE <x> <y> <light (1|0)> | WAIT <light (1|0)>
+            val lightNum = if (light) "1" else "0"
+            output.add("WAIT $lightNum")
         }
     }
+    return output
 }
 
 private fun closest(drone: Drone, creatures: List<Creature>): Creature? {
@@ -107,3 +127,12 @@ data class V(val x: Int, val y: Int)
 data class Drone(val id: Int, val c: V, val emergency: Int, val battery: Int)
 
 data class Creature(val id: Int, val c: V, val v: V)
+
+data class Blip(val droneId: Int, val creatureId: Int, val dir: RadarDir)
+
+enum class RadarDir {
+    TL,
+    TR,
+    BR,
+    BL
+}
