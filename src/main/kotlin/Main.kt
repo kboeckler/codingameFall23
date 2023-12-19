@@ -10,17 +10,21 @@ fun main(args: Array<String>) {
         val type = input.nextInt()
     }
 
+    var lightCountByDrone = mutableMapOf<Int, Int>(0 to 3)
+    var scannedCreatures = mutableSetOf<Int>()
+
     while (true) {
         val myDrones = mutableListOf<Drone>()
         val creatures = mutableListOf<Creature>()
-        val creaturesScanned = mutableSetOf<Int>()
+        val creaturesSaved = mutableSetOf<Int>()
 
         val myScore = input.nextInt()
         val foeScore = input.nextInt()
         val myScanCount = input.nextInt()
         for (i in 0 until myScanCount) {
             val creatureId = input.nextInt()
-            creaturesScanned.add(creatureId)
+            creaturesSaved.add(creatureId)
+            scannedCreatures.add(creatureId)
         }
         val foeScanCount = input.nextInt()
         for (i in 0 until foeScanCount) {
@@ -65,10 +69,24 @@ fun main(args: Array<String>) {
         }
         for (i in 0 until myDroneCount) {
             val drone = myDrones[i]!!
-            val output = closest(
+            val output: String
+            val creatureToScan = closest(
                 drone,
-                creatures.filterNot { creaturesScanned.contains(it.id) })?.let { "MOVE ${it.c.x} ${it.c.y} 0" }
-                ?: "WAIT 0"
+                creatures.filterNot { scannedCreatures.contains(it.id) })
+            if (drone.battery >= 15) {
+                lightCountByDrone[i] = 3
+            }
+            if (creatureToScan != null) {
+                scannedCreatures.add(creatureToScan.id)
+                output = "MOVE ${creatureToScan.c.x} ${creatureToScan.c.y} 0"
+            } else {
+                val light = lightCountByDrone[i]!! > 0
+                if (light) {
+                    lightCountByDrone[i] = lightCountByDrone[i]!! - 1
+                }
+                val lightNum = if (light) "1" else "0"
+                output = "WAIT $lightNum"
+            }
             println(output) // MOVE <x> <y> <light (1|0)> | WAIT <light (1|0)>
         }
     }
