@@ -12,7 +12,7 @@ fun main(args: Array<String>) {
         val type = input.nextInt()
     }
 
-    var lightCountByDrone = mutableMapOf<Int, Int>(0 to 3)
+    var lightCountByDrone = mutableMapOf<Int, Int>(0 to 3, 1 to 3)
     var scannedCreatures = mutableSetOf<Int>()
 
     while (true) {
